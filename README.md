@@ -53,3 +53,5 @@ This project implements the Pac-Man game with modern programming practices, incl
 - Add multiplayer mode.
 - Implement advanced ghost AI.
 - Add customizable skins and themes.
+
+![Pac-Man Screenshot](https://github.com/OfeksoN/I2CS_Ex3/blob/a97940a176120c3fa86aeaf2c321275428a21009/PacMan%20Pic.jpg)
