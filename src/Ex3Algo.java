@@ -86,7 +86,7 @@ public class Ex3Algo implements PacManAlgo{
 		Pixel2D pink = findClosestFood(pos, map, dis);
 
 		// Find the shortest path from the current position to the closest food pixel
-		Pixel2D[] path = map.shortestPath(pos, pink, 1);
+		Pixel2D[] path = map.ShortestPath(pos, pink, 1);
 
 		// Determine the direction to move based on the map and path
 		int direction = determineDirection(map, pos, path[1]);

@@ -121,7 +121,7 @@ public interface Map2D {
 	 * @param obsColor the color which is addressed as an obstacle.
 	 * @return the shortest path as an array of consecutive pixels, if none - returns null.
 	 */
-	public Pixel2D[] shortestPath(Pixel2D p1, Pixel2D p2, int obsColor);
+	public Pixel2D[] ShortestPath(Pixel2D p1, Pixel2D p2, int obsColor);
 
 	/**
 	 * Compute a new map (with the same dimension as this map) with the

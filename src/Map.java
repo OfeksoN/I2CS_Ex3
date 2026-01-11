@@ -1,5 +1,4 @@
-import java.util.ArrayDeque;
-
+import java.util.*;
 /**
  * This class represents a 2D map as a "screen" or a raster matrix or maze over integers.
  * @author boaz.benmoshe
@@ -8,115 +7,93 @@ import java.util.ArrayDeque;
 public class Map implements Map2D {
 	private int[][] _map;
 	private boolean _cyclicFlag = true;
-	private int width;
-	private int height;
 
 	/**
 	 * Constructs a w*h 2D raster map with an init value v.
-	 *
 	 * @param w
 	 * @param h
 	 * @param v
 	 */
 	public Map(int w, int h, int v) {
-		init(w, h, v);
+		init(w,h, v);
 	}
-
 	/**
 	 * Constructs a square map (size*size).
-	 *
 	 * @param size
 	 */
 	public Map(int size) {
-		this(size, size, 0);
+		this(size,size, 0);
 	}
 
 	/**
 	 * Constructs a map from a given 2D array.
-	 *
 	 * @param data
 	 */
 	public Map(int[][] data) {
 		init(data);
 	}
-
 	@Override
 	public void init(int w, int h, int v) {
-		if (w <= 0 || h <= 0) {
-			throw new IllegalArgumentException("width and height must be > 0; got w=" + w + ", h=" + h);
-		}
-		this.width = w;
-		this.height = h;
-		this._map = new int[h][w];
-		for (int y = 0; y < h; y++) {
-			for (int x = 0; x < width; x++) {
-				_map[y][x] = v;
+		_map = new int[w][h];
+		for (int i = 0; i < w; i++) {// rows
+			for (int j = 0; j < h; j++) {//columns
+				_map[i][j] = v;
 			}
 		}
 	}
-
 	@Override
 	public void init(int[][] arr) {
-		if (arr == null || arr.length == 0 || arr[0] == null)
-			throw new IllegalArgumentException("input array must be non-null and rectangular");
-		int H = arr.length;
-		int W = arr[0].length;
-		for (int y = 1; y < H; y++) {
-			if (arr[y] == null || arr[y].length != W)
-				throw new IllegalArgumentException("input array must be rectangular");
+		if(arr==null) {// checks if the array null
+			throw new RuntimeException();
 		}
-		this.width = W;
-		this.height = H;
-		this._map = new int[H][W];
-
-//        for (int y = 0; y < H; y++) {
-//            this._map[y] = Arrays.copyOf(arr[y], H);
-//        }
-		for (int y = 0; y < H; y++) {
-			for (int x = 0; x < W; x++) {
-				this._map[y][x] = arr[y][x];
-			}
+		int h = arr.length;
+		int w = arr[0].length;
+		_map = new int[h][w];
+		for (int i = 0; i < h; i++) {
+			System.arraycopy(arr[i], 0, _map[i], 0, w);
 		}
 	}
-
 	@Override
 	public int[][] getMap() {
-		int ans[][] = null;
-		ans = new int[height][width];
-		for (int y = 0; y < height; y++) {
-			System.arraycopy(_map[y], 0, ans[y], 0, width);
+		int[][] ans = new int[_map.length][_map[0].length];
+		for (int i = 0; i < _map.length; i++) {
+			for (int j = 0; j < _map[0].length; j++) {
+				ans[i][j] = this._map[i][j];
+			}
+
 		}
+
 		return ans;
 	}
-
 	@Override
 	public int getWidth() {
-		return width;
+		return _map.length ;
 	}
-
 	@Override
+
 	public int getHeight() {
-		return height;
+		return _map[0].length;
 	}
-
 	@Override
+
 	public int getPixel(int x, int y) {
-		return _map[y][x];
+		return _map[x][y];
 	}
 
 	@Override
+
 	public int getPixel(Pixel2D p) {
-		return this.getPixel(p.getX(), p.getY());
+		return this.getPixel(p.getX(),p.getY());
 	}
-
 	@Override
+
 	public void setPixel(int x, int y, int v) {
-		_map[y][x] = v;
+		_map[x][y]=v;
 	}
-
 	@Override
+
 	public void setPixel(Pixel2D p, int v) {
-		setPixel(p.getX(), p.getY(), v);
+		this.setPixel(p.getX(), p.getY(),v);
 	}
 
 	@Override
@@ -125,181 +102,186 @@ public class Map implements Map2D {
 	 * https://en.wikipedia.org/wiki/Flood_fill
 	 */
 	public int fill(Pixel2D xy, int new_v) {
-		int ans = 0;
-		final int H = _map.length;
-		final int W = _map[0].length;
-		final int fx = xy.getX();
-		final int fy = xy.getY();
-		if (fy < 0 || fy >= _map[0].length || fx < 0 || fx >= _map.length) {
+		int ans = 0; // Count of filled pixels to 0
+
+		int old_v = getPixel(xy); // Get the color at pixel p
+		if (old_v == new_v) {
+			// Skip same colors
+
 			return ans;
 		}
-		final int old = _map[fy][fx];
-		if (old == new_v) {
-			return ans;
-		}
-		final boolean[][] visited = new boolean[H][W];
-		final ArrayDeque<int[]> q = new ArrayDeque<>();
-		visited[fy][fx] = true;
-		q.add(new int[]{fx, fy});
-		final int[][] directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-		while (!q.isEmpty()) {
-			int[] cur = q.removeFirst();
-			int x = cur[0];
-			int y = cur[1];
-			if (_map[y][x] == old) {
-				_map[y][x] = new_v;
-				ans++;
-			}
-			for (int[] d : directions) {
-				int nx = x + d[0];
-				int ny = y + d[1];
-				if (_cyclicFlag) {
-					nx = ((nx % W) + W) % W;
-					ny = ((ny % H) + H) % H;
-				} else {
-					if (nx < 0 || nx >= W || ny < 0 || ny >= H)
-						continue;
-				}
-				if (!visited[ny][nx] && _map[ny][nx] == old) {
-					visited[ny][nx] = true;
-					q.add(new int[]{nx, ny});
-				}
-			}
-		}
-		return ans;
+		return floodFill(xy, old_v, new_v);
 	}
 
+	// Recursive helper method for flood-fill algorithm
+	private int floodFill(Pixel2D p,int old_v,int new_v) {
+		// Check if the pixel is inside the map and has the old color
+		if (!isInside(p) || getPixel(p) != old_v) {
+			return 0;
+		}
+		setPixel(p, new_v); // Set the pixel color to the new color
+		int counter = 1; // Counter to count the current pixel as filled
+
+		Pixel2D[] neighbor = findTheNeighbors(p); // Get the neighboring pixels
+
+		for (int i = 0; i < neighbor.length; i++) {
+			Pixel2D neighbors = neighbor[i];
+			counter += floodFill(neighbors, old_v, new_v); // Recursively fill the neighboring pixels
+		}
+
+		return counter; // Return the total count of filled pixels
+	}
 	@Override
 	/**
 	 * BFS like shortest the computation based on iterative raster implementation of BFS, see:
 	 * https://en.wikipedia.org/wiki/Breadth-first_search
 	 */
-	public Pixel2D[] shortestPath(Pixel2D p1, Pixel2D p2, int obsColor) {
+	public Pixel2D[] ShortestPath(Pixel2D p1, Pixel2D p2, int obsColor) {
 		Pixel2D[] ans = null;  // the result.
-		if (p1 == null || p2 == null) return null;
-		final int H = _map.length;
-		final int W = _map[0].length;
-		final int sx = p1.getX(), sy = p1.getY();
-		final int ex = p2.getX(), ey = p2.getY();
-		if (sx < 0 || sx >= W || sy < 0 || sy >= H) return null;
-		if (ex < 0 || ex >= W || ey < 0 || ey >= H) return null;
-		if (_map[sy][sx] == obsColor || _map[ey][ex] == obsColor) return null;
-		if (sx == ex && sy == ey) return new Pixel2D[]{p1};
-		final boolean[][] visited = new boolean[H][W];
-		final int[][] parentX = new int[H][W];
-		final int[][] parentY = new int[H][W];
-		for (int y = 0; y < H; y++) {
-			java.util.Arrays.fill(parentX[y], -1);
-			java.util.Arrays.fill(parentY[y], -1);
-		}
-		final int[][] directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
-		final java.util.ArrayDeque<int[]> q = new java.util.ArrayDeque<>();
-		visited[sy][sx] = true;
-		q.addLast(new int[]{sx, sy});
-		boolean found = false;
-		while (!q.isEmpty()) {
-			int[] cur = q.removeFirst();
-			int x = cur[0], y = cur[1];
 
-			if (x == ex && y == ey) {
-				found = true;
+		// Create a sorted map of distances from p1 to all other pixels
+		Map2D sort_map = this.allDistance(p1, obsColor);
+
+		// Get the target point value from the sorted map
+		int target_point = sort_map.getPixel(p2);
+
+		//check if the target point is an obstacle
+		if ((target_point == -1) || (target_point == -2)){
+			return null;
+		}
+		int width = this.getWidth();
+		int heigth = this.getHeight();
+
+		ans = new Index2D[target_point + 1];
+
+
+		// Use a queue to BFS search from the target to the start point
+		Queue<Pixel2D> start_point = new LinkedList<Pixel2D>();
+
+		start_point.add(p2);
+		ans[target_point] = p2;
+		while (!start_point.isEmpty()) {
+
+			Pixel2D current = start_point.remove();
+
+			// If the current pixel is the start pixel, break the loop
+			if (current.equals(p1)) {
 				break;
 			}
-			for (int[] d : directions) {
-				int nx = x + d[0];
-				int ny = y + d[1];
-				if (_cyclicFlag) {
-					nx = (nx % W + W) % W;
-					ny = (ny % H + H) % H;
-				} else {
-					if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
-				}
-				if (!visited[ny][nx] && _map[ny][nx] != obsColor) {
-					visited[ny][nx] = true;
-					parentX[ny][nx] = x;
-					parentY[ny][nx] = y;
-					q.addLast(new int[]{nx, ny});
+
+			// Get the neighbors of the current point
+			Pixel2D[] neighbors = findTheNeighbors(current);
+
+			for (Pixel2D neighbor : neighbors) {
+				if ((this.isCyclic() || isInside(neighbor)) && sort_map.getPixel(neighbor) == sort_map.getPixel(current) - 1) {
+					start_point.add(neighbor);
+
+					// store the neighbor pixel at the correct position in the shortest path sequence
+					ans[sort_map.getPixel(current) - 1] = neighbor;
+					break;
 				}
 			}
 		}
-		if (!found) return null;
-		java.util.ArrayList<Pixel2D> path = new java.util.ArrayList<>();
-		int cx = ex, cy = ey;
-		while (true) {
-			path.add(new Index2D(cx, cy));
-			if (cx == sx && cy == sy) break; // reached start
-			int px = parentX[cy][cx];
-			int py = parentY[cy][cx];
-			if (px == -1 && py == -1) return null; // safety
-			cx = px;
-			cy = py;
-		}
-		java.util.Collections.reverse(path);
-		ans = path.toArray(new Pixel2D[0]);
+
 		return ans;
 	}
 
 	@Override
 	public boolean isInside(Pixel2D p) {
-		int x = p.getX(), y = p.getY();
-		return x >= 0 && x < width && y >= 0 && y < height;
-	}
+		int x=p.getX();//retrieves the x-coordinate of the p pixel
+		int y= p.getY();//retrieves the y-coordinate of the p pixel
 
-	@Override
-	/////// add your code below ///////
-	public boolean isCyclic() {
+		int width=getWidth();//retrieves the width of the map
+		int height = getHeight();//retrieves the height of the map
+
+		/*checks if the x-coordinate x is greater than or equal to 0, less than the width,
+		 *  the y-coordinate y is greater than or equal to 0,
+		 *  and less than the height
+		 */
+		if(x>=0&&x<width && y>=0&&y<height) {
+			return true;
+		}
 		return false;
 	}
+
 	@Override
-	/////// add your code below ///////
-	public void setCyclic(boolean cy) {;}
+	public boolean isCyclic() {
+		return _cyclicFlag;
+	}
+	@Override
+
+	public void setCyclic(boolean cy) {
+		this._cyclicFlag=cy;
+	}
+
 	@Override
 	public Map2D allDistance(Pixel2D start, int obsColor) {
-		Map2D ans = null;  // the result.
-		final int H = _map.length;
-		final int W = _map[0].length;
-		final int sx = start.getX(), sy = start.getY();
-		int[][] dist = new int[H][W];
-		for (int y = 0; y < H; y++) java.util.Arrays.fill(dist[y], -1);
-		if (sx < 0 || sx >= W || sy < 0 || sy >= H) {
-			return new Map(dist);
-		}
-		if (_map[sy][sx] == obsColor) {
-			for (int y = 0; y < H; y++)
-				for (int x = 0; x < W; x++)
-					if (_map[y][x] == obsColor) dist[y][x] = obsColor;
-			return new Map(dist);
-		}
-		for (int y = 0; y < H; y++)
-			for (int x = 0; x < W; x++)
-				if (_map[y][x] == obsColor) dist[y][x] = obsColor;
-		final boolean[][] visited = new boolean[H][W];
-		final ArrayDeque<int[]> q = new ArrayDeque<>();
-		final int[][] directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-		visited[sy][sx] = true;
-		dist[sy][sx] = 0;
-		q.add(new int[]{sx, sy});
-		while (!q.isEmpty()) {
-			int[] cur = q.removeFirst();
-			int x = cur[0], y = cur[1];
+		Map2D ans = null;
 
-			for (int[] d : directions) {
-				int nx = x + d[0], ny = y + d[1];
+		int h = getHeight();
+		int w= getWidth();
 
-				if (_cyclicFlag) {
-					nx = ((nx % W) + W) % W;
-					ny = ((ny % H) + H) % H;
-				} else {
-					if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+		// Create a new map with the same dimensions as the current map, using the obstacle color.
+		ans = new Map(w, h,-1);
+		// Create a list to store the pixels to be processed.
+		List<Pixel2D> pixels= new ArrayList<Pixel2D>();
+
+		// Set the distance of the start pixel to 0 in the new map.
+		ans.setPixel(start, 0);
+
+		// Add the start pixel to the list of pixels to be processed.
+		pixels.add(start);
+
+		// Perform (BFS) to compute the shortest path distances.
+		while (!pixels.isEmpty()) {
+
+			// Remove the first pixel from the list of pixels.
+			Pixel2D current_pix= pixels.remove(0);
+
+			// Get the current distance of the pixel from the new map.
+			int current_Dis= ans.getPixel(current_pix);
+
+			// Get the neighboring
+			Pixel2D[] neigh= findTheNeighbors( current_pix);
+
+			// Iterate through the neighbors
+			for (int i = 0; i < neigh.length; i++) {
+				// Access the neighbor at the current index.
+				Pixel2D neighbor = neigh[i];
+
+				// Check if the neighbor pixel is inside the map and has not been visited.
+				if(isInside(neighbor)&&ans.getPixel(neighbor)==-1) {
+
+					// Check if the neighbor pixel is not an obstacle.
+					if (getPixel(neighbor) != obsColor) {
+						// Update the distance of the neighbor pixel in the new map.
+						ans.setPixel(neighbor, current_Dis + 1);
+
+						// Add the neighbor pixel to the list of pixels to be processed.
+						pixels.add(neighbor);
+					}
 				}
-				if (visited[ny][nx]) continue;
-				if (_map[ny][nx] == obsColor) continue;
-				visited[ny][nx] = true;
-				dist[ny][nx] = dist[y][x] + 1;
-				q.add(new int[]{nx, ny});
 			}
 		}
-		ans = new Map(dist);
 		return ans;
+	}
+	/*
+	 *this is a helper method that help us in the shortest path method and allditance
+	 */
+	private Pixel2D[] findTheNeighbors(Pixel2D pixel) {
+		Pixel2D[] neighbors = new Pixel2D[4];
+
+		int w=getWidth();
+		int h= getHeight();
+		int x = pixel.getX();
+		int y = pixel.getY();
+
+		neighbors[3] = new Index2D(x, (y - 1 + h) % h);//left
+		neighbors[2] = new Index2D(x, (y + 1) % h);//right
+		neighbors[0] = new Index2D((x - 1 + w) % w, y);//up
+		neighbors[1] = new Index2D((x + 1) % w, y);//down
+
+
+		return neighbors;
 	}
 }
